@@ -13,7 +13,7 @@
  *
  */
 
-var onDOMReady = (function () {
+function onDOMReady (win, fn) {
 	
 	var modern = doc[addEventListener],
 	
@@ -21,7 +21,12 @@ var onDOMReady = (function () {
 	
 	done = false,
 	
-	fns = [],
+	windows = 1,
+	
+	fns = {
+		win : win,
+		fns
+	},
 
 	adder = (function () {
 		return modern
@@ -50,9 +55,6 @@ var onDOMReady = (function () {
 
 		doc = win.document, root = doc.documentElement,
 
-		fns = [fn],
-
-
 		init = function(e) {
 			if (e.type == 'readystatechange' && doc.readyState != 'complete') return;
 			if (!done && (done = true)) {
@@ -68,7 +70,7 @@ var onDOMReady = (function () {
 
 		if (doc.readyState == 'complete') fn.call(win, 'lazy');
 		else {
-			if (modern && root.doScroll) {
+			if (!modern && root.doScroll) {
 				try { top = !win.frameElement; } catch(e) { }
 				if (top) poll();
 			}
@@ -81,4 +83,4 @@ var onDOMReady = (function () {
 		? fn.call (win);	//	DOM is ready, immediately call function
 		: contentLoaded (win, fn)
 	}
-})();
+}
