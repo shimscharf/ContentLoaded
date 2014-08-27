@@ -5,7 +5,7 @@
  * Summary: cross-browser wrapper for DOMContentLoaded
  * Updated: 20101020
  * License: MIT
- * Version: 1.2
+ * Version: 1.3
  *
  * URL:
  * http://javascript.nwbox.com/ContentLoaded/
@@ -13,18 +13,10 @@
  *
  */
 
-// @win window reference
-// @fn function reference
-function contentLoaded(win, fn) {
+var onDOMReady = (function () {
+	
+	var modern = doc[addEventListener],
 
-	var done = false, top = true,
-	
-	addEventListener = 'addEventListener',
-	
-	modern = doc[addEventListener],
-	
-	doc = win.document, root = doc.documentElement,
-	
 	adder = (function () {
 		return modern
 		?	function (o, e, fnc) {o[addEventListener] (e, fnc, false)}
@@ -37,33 +29,44 @@ function contentLoaded(win, fn) {
 		:	function (o, e, fnc) {o['detachEvent'] ('on' + e, fnc)}
 	})(),
 	
-	events = function (adderOrRemover) {
-		modern
-			? adderOrRemover (doc, 'DOMContentLoaded', init)
-			: adderOrRemover (doc, 'readystatechange', init)
-		adderOrRemover (win, 'load', init)
-	},
-	
-	init = function(e) {
-		if (e.type == 'readystatechange' && doc.readyState != 'complete') return;
-		if (!done && (done = true)) {
-			events (remover);
-			fn.call(win, e.type || e);
-		}
-	},
+	// @win window reference
+	// @fn function reference
+	contentLoaded = function (win, fn) {
 
-	poll = function() {
-		try { root.doScroll('left'); } catch(e) { setTimeout(poll, 50); return; }
-		init('poll');
-	};
+		var done = false, top = true,
 
-	if (doc.readyState == 'complete') fn.call(win, 'lazy');
-	else {
-		if (modern && root.doScroll) {
-			try { top = !win.frameElement; } catch(e) { }
-			if (top) poll();
+		addEventListener = 'addEventListener',
+
+		doc = win.document, root = doc.documentElement,
+
+		events = function (adderOrRemover) {
+			modern
+				? adderOrRemover (doc, 'DOMContentLoaded', init)
+				: adderOrRemover (doc, 'readystatechange', init)
+			adderOrRemover (win, 'load', init)
+		},
+
+		init = function(e) {
+			if (e.type == 'readystatechange' && doc.readyState != 'complete') return;
+			if (!done && (done = true)) {
+				events (remover);
+				fn.call(win, e.type || e);
+			}
+		},
+
+		poll = function() {
+			try { root.doScroll('left'); } catch(e) { setTimeout(poll, 50); return; }
+			init('poll');
+		};
+
+		if (doc.readyState == 'complete') fn.call(win, 'lazy');
+		else {
+			if (modern && root.doScroll) {
+				try { top = !win.frameElement; } catch(e) { }
+				if (top) poll();
+			}
+			events (adder)
 		}
-		events (adder)
+
 	}
-
-}
+})()
