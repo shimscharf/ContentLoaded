@@ -16,35 +16,42 @@
 var onDOMReady = (function () {
 	
 	var modern = doc[addEventListener],
+	
+	addEventListener = 'addEventListener',
+	
+	done = false,
+	
+	fns = [],
 
 	adder = (function () {
 		return modern
-		?	function (o, e, fnc) {o[addEventListener] (e, fnc, false)}
-		:	function (o, e, fnc) {o['attachEvent'] ('on' + e, fnc)}
+		?	function (o, e, fn) {o[addEventListener] (e, fn, false)}
+		:	function (o, e, fn) {o['attachEvent'] ('on' + e, fn)}
 	})(),
 	
 	remover = (function () {
 		return modern
-		?	function (o, e, fnc) {o['removeEventListener'] (e, fnc, false)}
-		:	function (o, e, fnc) {o['detachEvent'] ('on' + e, fnc)}
+		?	function (o, e, fn) {o['removeEventListener'] (e, fn, false)}
+		:	function (o, e, fn) {o['detachEvent'] ('on' + e, fn)}
 	})(),
+	
+	events = function (adderOrRemover) {
+		modern
+			? adderOrRemover (doc, 'DOMContentLoaded', init)
+			: adderOrRemover (doc, 'readystatechange', init)
+		adderOrRemover (win, 'load', init)
+	},
 	
 	// @win window reference
 	// @fn function reference
 	contentLoaded = function (win, fn) {
 
-		var done = false, top = true,
-
-		addEventListener = 'addEventListener',
+		var top = true,
 
 		doc = win.document, root = doc.documentElement,
 
-		events = function (adderOrRemover) {
-			modern
-				? adderOrRemover (doc, 'DOMContentLoaded', init)
-				: adderOrRemover (doc, 'readystatechange', init)
-			adderOrRemover (win, 'load', init)
-		},
+		fns = [fn],
+
 
 		init = function(e) {
 			if (e.type == 'readystatechange' && doc.readyState != 'complete') return;
@@ -67,6 +74,11 @@ var onDOMReady = (function () {
 			}
 			events (adder)
 		}
-
 	}
-})()
+	
+	return function (win, fn) {
+		done
+		? fn.call (win);	//	DOM is ready, immediately call function
+		: contentLoaded (win, fn)
+	}
+})();
